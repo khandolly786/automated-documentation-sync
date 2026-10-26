@@ -2,11 +2,11 @@
 
 ## Plan Scope and Governance
 
-This proposed plan covers both the policy-documentation synchronization workflow and the user-selected overtime-operations scope in requirements FR-001 through FR-038. The existing T01-T36 tasks cover the documentation-control pipeline for policy ingestion, parsing, versioning, change detection, requirements synchronization, documentation generation, human review, and controlled publication. Proposed T37-T42 add the missing runtime overtime request, eligibility, calculation, approval/status, and submission behavior.
+This plan covers both the policy-documentation synchronization workflow and the user-selected overtime-operations scope in requirements FR-001 through FR-038. The existing T01-T36 tasks cover the documentation-control pipeline for policy ingestion, parsing, versioning, change detection, requirements synchronization, documentation generation, human review, and controlled publication. T37-T42 add the missing runtime overtime request, eligibility, calculation, approval/status, and submission behavior.
 
 The plan does not implement payroll execution, payment processing, payment confirmation, or policy-level exception approval. Payment SLA, payment confirmation evidence, policy-exception authority, retention/deletion policy, backup/recovery objectives, authoritative repositories, identity-provider choices, and provider-specific deployment choices remain `Not Found` or require human approval.
 
-Requirements approval is recorded in `requirements.md`. The revised architecture and this implementation plan are proposals and require human approval before implementation tasks that depend on them are unblocked. Documentation synchronization approval and final publication approval remain mandatory per synchronization run.
+Requirements approval is recorded in `requirements.md`. The user approved the revised architecture and this plan on 2026-10-26. Tasks remain subject to their dependencies and the provider, security, retention, and recovery decisions listed below. Documentation synchronization approval and final publication approval remain mandatory per synchronization run.
 
 ## Dependency and Status Conventions
 
@@ -613,7 +613,7 @@ Requirements approval is recorded in `requirements.md`. The revised architecture
 
 ## Phase 11 — Overtime Operations
 
-These proposed tasks implement the runtime requirements selected by the user. They are blocked until the revised architecture and this plan receive human approval. They must remain separate from `SYNC_*` documentation-synchronization state and must not infer payment or policy-exception behavior.
+These tasks implement the runtime requirements selected by the user. The architecture and plan were approved by the user on 2026-10-26. Tasks remain subject to their listed dependencies and operational blockers. They must remain separate from `SYNC_*` documentation-synchronization state and must not infer payment or policy-exception behavior.
 
 ### T37 — Define Overtime Request and Result Records
 
@@ -622,7 +622,7 @@ These proposed tasks implement the runtime requirements selected by the user. Th
 - **Description:** Define typed request, approval evidence, eligibility result, calculation result, submission metadata, and status-history records. Persist calculation inputs and provenance; keep overtime workflow statuses separate from documentation-sync states.
 - **Phase:** 11
 - **Dependencies:** T02, T04, T12, T17
-- **Blocked by:** Revised architecture and implementation-plan approval; production persistence and retention choices remain human-gated.
+- **Blocked by:** Production persistence and retention choices remain human-gated.
 - **Parallelizable:** No
 - **Related FR-XXX requirements:** FR-001, FR-002, FR-016, FR-033, FR-036, FR-037
 - **Related NFR-XXX requirements:** NFR-001, NFR-004, NFR-005
@@ -638,7 +638,7 @@ These proposed tasks implement the runtime requirements selected by the user. Th
 - **Description:** Implement associate-scope, business-request, advance-approval, project calendar, weekly boundary, time-zone, lunch exclusion, and 48-hour threshold rules. Missing required configuration or approval evidence blocks the affected evaluation.
 - **Phase:** 11
 - **Dependencies:** T17, T37
-- **Blocked by:** Revised architecture and implementation-plan approval; calendar values remain project-provided inputs.
+- **Blocked by:** Calendar values remain project-provided inputs.
 - **Parallelizable:** No
 - **Related FR-XXX requirements:** FR-003 through FR-016
 - **Related NFR-XXX requirements:** NFR-002, NFR-004
@@ -654,7 +654,7 @@ These proposed tasks implement the runtime requirements selected by the user. Th
 - **Description:** Implement the approved hourly-wage formula, 8/9-hour configuration constraint, working/non-working-day scenario bands, compensatory-off eligibility and deadlines, full intermediate precision, and final INR rounding.
 - **Phase:** 11
 - **Dependencies:** T37, T38
-- **Blocked by:** Revised architecture and implementation-plan approval; required wage data remains an external validated input.
+- **Blocked by:** Required wage data remains an external validated input.
 - **Parallelizable:** No
 - **Related FR-XXX requirements:** FR-017 through FR-029
 - **Related NFR-XXX requirements:** NFR-002, NFR-003
@@ -670,7 +670,7 @@ These proposed tasks implement the runtime requirements selected by the user. Th
 - **Description:** Record required advance approvals, approval evidence references, overtime registration date, time-report update date, submission dates, processing status, and status history. Track the 15-day registration and before-the-5th time-report requirements without inventing consequences for missed deadlines.
 - **Phase:** 11
 - **Dependencies:** T37, T38, T39
-- **Blocked by:** Revised architecture and implementation-plan approval; identity and reviewer authorization decisions remain human-gated.
+- **Blocked by:** Identity and reviewer authorization decisions remain human-gated.
 - **Parallelizable:** No
 - **Related FR-XXX requirements:** FR-012 through FR-016, FR-033, FR-036 through FR-039
 - **Related NFR-XXX requirements:** NFR-001, NFR-004, NFR-005
@@ -686,7 +686,7 @@ These proposed tasks implement the runtime requirements selected by the user. Th
 - **Description:** Route regular-employee calculation and approval metadata to Ask Compensation and subcontractor details to TA Operations at the clarified address. Record submission outcomes without executing or confirming payment.
 - **Phase:** 11
 - **Dependencies:** T30, T39, T40
-- **Blocked by:** Revised architecture and implementation-plan approval; production endpoint, credentials, and integration behavior require human approval.
+- **Blocked by:** Production endpoint, credentials, and integration behavior require human approval.
 - **Parallelizable:** No
 - **Related FR-XXX requirements:** FR-030 through FR-035
 - **Related NFR-XXX requirements:** NFR-001, NFR-002, NFR-004
@@ -730,8 +730,8 @@ No task may bypass T23, T25, or T27 before publication integration is considered
 ## Human Approval Gates
 
 1. **Requirements approval:** Completed for the existing requirements artifact; any requirement changes require renewed human approval.
-2. **Architecture/design approval:** Pending for the proposed operations boundary and revised architecture.
-3. **Implementation-plan approval:** Pending for the proposed T37-T42 operations tasks and updated dependencies.
+2. **Architecture/design approval:** Approved by the user on 2026-10-26 for the combined documentation-sync and overtime-operations boundary.
+3. **Implementation-plan approval:** Approved by the user on 2026-10-26 for T37-T42 and their dependencies.
 4. **Documentation synchronization review:** Required for every generated change set before `SYNC_APPROVED`.
 5. **Final publication approval:** Required before `SYNC_PUBLISHED`; publication must verify approval evidence, reviewer authorization, and artifact hash.
 6. **Provider and operational approval:** Required for source repository, identity provider, documentation repository, protected publication mechanism, retention/deletion, backup/recovery, and notification provider choices.
@@ -755,7 +755,7 @@ No task may bypass T23, T25, or T27 before publication integration is considered
 - **FR-025 to FR-030:** T09, T10, T14, T15, T18, T19, T33, T34, T36, T38, T39, T42.
 - **FR-031 to FR-035:** T09, T10, T14, T17-T19, T22, T26, T32, T35, T36, T40-T42.
 - **FR-036 to FR-039:** T02, T12, T21-T23, T25, T28, T30, T35-T37, T40, T42.
-- **Overtime runtime behavior:** Proposed T37-T42; implementation is blocked pending architecture and plan approval.
+- **Overtime runtime behavior:** T37-T42 are approved and not yet implemented; runtime coverage remains incomplete.
 - **NFR-001:** T04, T11, T13, T16, T20-T22, T28, T30, T32-T42.
 - **NFR-002:** T03, T08, T17, T21, T23, T30, T32, T35, T36, T38, T39, T41, T42.
 - **NFR-003:** T20, T34, T36, T39, T42.

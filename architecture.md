@@ -4,7 +4,7 @@
 
 The system provides two connected but separately governed capabilities: a controlled pipeline for synchronizing SDLC documentation with changes in the Overtime Compensation Policy, and an overtime operations workflow for evaluating eligibility, calculating compensation, tracking requests, and submitting approved details. Policy synchronization preserves source provenance and requires human approval before generated documentation is finalized. Overtime operations use only the approved requirements and clarification records.
 
-The system does not execute payroll, transfer funds, confirm payments, approve policy exceptions, or claim a payment SLA. It may calculate overtime compensation and submit approved calculation and approval details to the destinations defined in the requirements. This architecture reflects the user-selected overtime-operations scope and is pending human architecture approval.
+The system does not execute payroll, transfer funds, confirm payments, approve policy exceptions, or claim a payment SLA. It may calculate overtime compensation and submit approved calculation and approval details to the destinations defined in the requirements. The user approved this architecture boundary on 2026-10-26; provider, security, and operational decisions listed below remain open.
 
 ## Component List
 
@@ -445,13 +445,13 @@ The expected policy-change frequency and document volume are `Not Found`; capaci
 
 ### AD-001: Documentation synchronization and overtime operations are separate system workflows
 
-**Status:** Proposed based on the user-selected product scope; human architecture approval is pending.
+**Status:** Approved by the user on 2026-10-26.
 
 **Decision:** The system synchronizes policy-derived documentation and also evaluates overtime eligibility, calculates compensation, tracks requests, and submits approved details as specified by the requirements. Payroll execution, payment transfer, payment confirmation, and policy-exception approval remain outside the boundary.
 
 **Basis:** Requirements FR-001 through FR-038 define overtime operations, while FR-039 and the requirements' `Not Found` items leave payment confirmation, payment SLA, and policy-exception authority undefined.
 
-**Approval needed:** Human approval of the combined system boundary, including the separation between documentation synchronization and overtime operations.
+**Approval record:** The user explicitly approved the combined system boundary and workflow separation on 2026-10-26. This does not resolve DR-003 or approve provider-specific security and operational decisions.
 
 ### AD-002: Immutable source and artifact versions
 
@@ -553,16 +553,15 @@ The expected policy-change frequency and document volume are `Not Found`; capaci
 ## Items Requiring Human Approval
 
 1. **Requirements approval:** Approval of the requirements artifact and its 17 human-approved business decisions is a requirements-governance event.
-2. **Architecture/design approval:** Approval of this proposed architecture and its combined documentation-sync and overtime-operations boundary is a separate architecture-governance event.
-3. **Documentation synchronization approval:** Approval of an individual generated change set is a separate human review event required before publication.
-4. Selection of the authoritative policy source repository and ingestion trigger.
-5. Selection of identity provider, reviewer authorization model, and access-control model.
-6. Selection of documentation repository and protected finalization mechanism.
-7. Storage retention, deletion, backup, and disaster-recovery policies.
-8. Deployment environment and specific technology providers.
-9. Any future policy clarification that changes a Source Policy, Source FAQ, or existing Human-Approved Clarification.
-10. Any proposed policy-level exception authority; it is currently `Not Found`.
-11. Any payment SLA or payment confirmation evidence source; both are currently `Not Found`.
+2. **Documentation synchronization approval:** Approval of an individual generated change set is a separate human review event required before publication.
+3. Selection of the authoritative policy source repository and ingestion trigger.
+4. Selection of identity provider, reviewer authorization model, and access-control model.
+5. Selection of documentation repository and protected finalization mechanism.
+6. Storage retention, deletion, backup, and disaster-recovery policies.
+7. Deployment environment and specific technology providers.
+8. Any future policy clarification that changes a Source Policy, Source FAQ, or existing Human-Approved Clarification.
+9. Any proposed policy-level exception authority; it is currently `Not Found`.
+10. Any payment SLA or payment confirmation evidence source; both are currently `Not Found`.
 
 ## Traceability to Requirements
 
