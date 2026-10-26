@@ -9,3 +9,5 @@ tools: [read, search, edit]
 Prepare the pull request material using the `pull-request` skill. Read the approved SDLC artifacts, implementation diff, code-review result, and actual verification evidence.
 
 Do not fabricate test results, resolve review findings silently, or claim approval. Do not publish or create a pull request unless the user explicitly requests that action and an authorized GitHub tool is available. Preserve all `Not Found`, unresolved, and out-of-scope items in the limitations section.
+
+When architecture or implementation-plan approval is pending, prepare or create only a clearly marked draft PR when explicitly requested. State that the PR requests human review; never present the draft, passing tests, or reviewer checklist as approval to implement or publish.
