@@ -2,9 +2,9 @@
 
 ## Architecture Summary
 
-The Automated Documentation Sync system is a controlled documentation pipeline for synchronizing requirements and related SDLC documentation with changes in the Overtime Compensation Policy. It stores immutable source-policy versions, parses policy and FAQ content, detects semantic changes, proposes documentation updates, and requires human approval before any synchronized artifact is finalized.
+The system provides two connected but separately governed capabilities: a controlled pipeline for synchronizing SDLC documentation with changes in the Overtime Compensation Policy, and an overtime operations workflow for evaluating eligibility, calculating compensation, tracking requests, and submitting approved details. Policy synchronization preserves source provenance and requires human approval before generated documentation is finalized. Overtime operations use only the approved requirements and clarification records.
 
-The system does not calculate payroll, execute payments, confirm payments, approve policy exceptions, or claim a payment SLA. It may store overtime-related requirements and submission metadata only where required by the approved requirements.
+The system does not execute payroll, transfer funds, confirm payments, approve policy exceptions, or claim a payment SLA. It may calculate overtime compensation and submit approved calculation and approval details to the destinations defined in the requirements. This architecture reflects the user-selected overtime-operations scope and is pending human architecture approval.
 
 ## Component List
 
@@ -22,8 +22,12 @@ The system does not calculate payroll, execute payments, confirm payments, appro
 12. **Workflow API and Review UI**: Provides controlled access to runs, differences, approvals, and status history.
 13. **Notification Adapter**: Delivers review and error notifications without becoming a payroll processor.
 14. **Documentation Publication Adapter**: Publishes only approved documentation change sets through a protected branch/change-set and pull request, or an equivalent protected repository mechanism. The specific provider is not assumed.
-15. **Outbound Submission Adapter**: Records or forwards approved documentation/submission metadata to the defined processing destinations; it does not process payments.
+15. **Overtime Submission Adapter**: Sends approved overtime calculation and approval metadata to the processing destinations defined in the requirements; it does not process payments.
 16. **Synchronization Checkpoint Store**: Persists run stages, change-set state, retries, and publication idempotency keys.
+17. **Overtime Request Service**: Captures overtime requests, required inputs, approval evidence, processing status, and status history.
+18. **Eligibility Evaluation Service**: Applies approved associate, advance-approval, working-calendar, and weekly-hours rules; fails closed when required inputs are missing or invalid.
+19. **Compensation Calculator**: Applies the approved hourly-wage formula, scenario rates, precision, and final INR rounding rules.
+20. **Overtime Workflow Store**: Persists request inputs, calculation results, evidence references, submission metadata, and status history with appropriate access controls.
 
 ## System Context
 
@@ -45,8 +49,20 @@ flowchart LR
     Review --> Audit
     Config[Project configuration] --> Validate[Configuration Validation]
     Validate --> Sync
-    External[Defined processing contacts] <-->|submission metadata only| Outbound[Outbound Adapter]
-    Outbound --> Audit
+    Associate[Associate / Delivery Manager] --> Request[Overtime Request Service]
+    Request --> Approval[Advance approval by Sponsor and Account Manager]
+    Approval --> Eligibility[Eligibility Evaluation]
+    Config --> Eligibility
+    Wage[Validated wage data] --> Calculator[Compensation Calculator]
+    Eligibility --> Calculator
+    Calculator --> OvertimeSubmit[Overtime Submission Adapter]
+    OvertimeSubmit -->|regular employees| Compensation[Ask Compensation]
+    OvertimeSubmit -->|subcontractors| TAOps[TA Operations]
+    Request --> OvertimeStore[Overtime Workflow Store]
+    Eligibility --> Audit
+    Calculator --> Audit
+    Approval --> Audit
+    OvertimeSubmit --> Audit
     Sync --> Checkpoints[Sync Checkpoints]
     Publish --> Audit
 ```
@@ -237,7 +253,43 @@ Synchronization is a proposal workflow:
 
 The synchronizer preserves stable identifiers and updates traceability references when documentation sections move. It must retain conflict records, including the conflicting subcontractor FAQ contact, rather than silently deleting them.
 
-The synchronization boundary ends at proposed or human-approved documentation. It does not implement overtime calculation, payroll, payment processing, payment confirmation, or policy-exception approval.
+The synchronization workflow ends at proposed or human-approved documentation. It is separate from the overtime operations workflow below. Neither workflow executes payroll, processes or confirms payments, or approves policy exceptions.
+
+## Overtime Operations Workflow
+
+The operations workflow implements the behavior described by FR-001 through FR-038 and the approved clarifications. It must not infer values or transition rules that the requirements identify as `Not Found`.
+
+### Request and Eligibility
+
+- Capture the associate, employment category, project, overtime date and hours, working-day classification, project configuration, responsible manager, required approvers, and evidence references.
+- Require business-requested overtime and advance approval from both the Project Sponsor and Account Manager before treating overtime as eligible.
+- Use the project-designated calendar, configured week boundaries, time zone, and actual hours excluding the included lunch break.
+- Evaluate the 48-hour threshold within the configured work week; exactly 48 hours does not qualify, and only approved hours beyond 48 qualify.
+- Report required missing values as `Not Found` and block the affected evaluation. Do not supply default calendars, time zones, working hours, or wage values.
+
+### Compensation Calculation
+
+- Calculate hourly wage as `Wage Salary / 365 / project-designated working hours`, with project working hours restricted to 8 or 9.
+- Apply the approved scenario rates: working-day overtime at 2X; non-working-day overtime below 6 hours is ineligible; 6 to less than 9 hours is 2X; 9 or more hours is 1X plus compensatory-off eligibility.
+- Preserve fractional-hour precision through the calculation and round only the final INR amount to two decimal places.
+- For qualifying compensatory off, retain the 30-day application and 90-day utilization deadlines and the requirement for applicable business approval.
+
+### Approval, Status, and Submission
+
+- Keep overtime request evidence and workflow status separate from documentation synchronization state and policy-source classifications.
+- Record the statuses specified by FR-036 and status history where applicable. Do not invent transition authorization or payment-confirmation evidence where requirements mark them `Not Found`.
+- Track overtime registration within 15 days of the date worked and time-report updates before the 5th of the following month. Do not invent consequences for missed reporting deadlines; those remain `Not Found`.
+- Route regular-employee calculations and approval evidence to Ask Compensation and subcontractor details to TA Operations at the clarified destination.
+- Record submission and processing metadata only. Payment execution and confirmation remain outside the system boundary.
+
+### Overtime Data Flow
+
+1. A Delivery Manager or Delivery Head records a business-requested overtime request and obtains advance approval from both the Project Sponsor and Account Manager before overtime is worked.
+2. Configuration and required-input validation report missing values as `Not Found` and block the affected operation.
+3. Eligibility evaluation validates associate scope, advance approvals, project calendar, weekly boundaries, time zone, and the 48-hour threshold.
+4. The compensation calculator applies the approved formula and scenario rules, retaining exact inputs and calculation provenance.
+5. The workflow records the prior approval evidence and status history; unresolved or missing approval evidence cannot be treated as approval.
+6. Approved calculation and evidence metadata are submitted to the correct processing destination, and the submission result is recorded without claiming payment completion.
 
 ## Human Approval Workflow
 
@@ -391,15 +443,15 @@ The expected policy-change frequency and document volume are `Not Found`; capaci
 
 ## Architecture Decisions
 
-### AD-001: Documentation synchronization is the system boundary
+### AD-001: Documentation synchronization and overtime operations are separate system workflows
 
-**Status:** Approved by requirements.
+**Status:** Proposed based on the user-selected product scope; human architecture approval is pending.
 
-**Decision:** The system synchronizes policy-derived documentation and metadata only. Payroll, payment execution, payment confirmation, and policy-exception approval are outside the boundary.
+**Decision:** The system synchronizes policy-derived documentation and also evaluates overtime eligibility, calculates compensation, tracks requests, and submits approved details as specified by the requirements. Payroll execution, payment transfer, payment confirmation, and policy-exception approval remain outside the boundary.
 
-**Basis:** Approved requirements explicitly prohibit implementing payroll/payment processing and retain payment SLA, payment evidence, and policy-exception authority as `Not Found`.
+**Basis:** Requirements FR-001 through FR-038 define overtime operations, while FR-039 and the requirements' `Not Found` items leave payment confirmation, payment SLA, and policy-exception authority undefined.
 
-**Approval needed:** Human approval of this architecture boundary.
+**Approval needed:** Human approval of the combined system boundary, including the separation between documentation synchronization and overtime operations.
 
 ### AD-002: Immutable source and artifact versions
 
@@ -501,7 +553,7 @@ The expected policy-change frequency and document volume are `Not Found`; capaci
 ## Items Requiring Human Approval
 
 1. **Requirements approval:** Approval of the requirements artifact and its 17 human-approved business decisions is a requirements-governance event.
-2. **Architecture/design approval:** Approval of this architecture and its documentation-only system boundary is a separate architecture-governance event.
+2. **Architecture/design approval:** Approval of this proposed architecture and its combined documentation-sync and overtime-operations boundary is a separate architecture-governance event.
 3. **Documentation synchronization approval:** Approval of an individual generated change set is a separate human review event required before publication.
 4. Selection of the authoritative policy source repository and ingestion trigger.
 5. Selection of identity provider, reviewer authorization model, and access-control model.
