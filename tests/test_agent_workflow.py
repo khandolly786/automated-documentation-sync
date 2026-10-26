@@ -51,6 +51,27 @@ def test_each_agent_references_a_discoverable_role_skill():
     assert not list((CUSTOMIZATION_ROOT / "prompts").glob("*.prompt.md"))
 
 
+def test_pr_agent_keeps_pending_approval_gates_visible():
+    content = (CUSTOMIZATION_ROOT / "agents" / "pr-agent.agent.md").read_text(encoding="utf-8")
+
+    assert "clearly marked draft PR" in content
+    assert "never present the draft, passing tests, or reviewer checklist as approval" in content
+
+
+def test_verification_agent_separates_runtime_and_test_double_evidence():
+    content = (CUSTOMIZATION_ROOT / "agents" / "verification-agent.agent.md").read_text(encoding="utf-8")
+
+    assert "Do not mark runtime requirements covered" in content
+    assert "report test-double results separately from production verification" in content
+
+
+def test_code_review_agent_flags_unapproved_scope_and_unsupported_claims():
+    content = (CUSTOMIZATION_ROOT / "agents" / "code-review-agent.agent.md").read_text(encoding="utf-8")
+
+    assert "Treat proposed or pending architecture decisions as unresolved" in content
+    assert "test-double evidence is not represented as production integration" in content
+
+
 def test_authoritative_sdlc_artifacts_exist_at_repository_root():
     expected_artifacts = (
         "requirements.md",

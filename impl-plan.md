@@ -2,11 +2,11 @@
 
 ## Plan Scope and Governance
 
-This plan implements the approved Automated Documentation Sync architecture and requirements only. It creates a documentation-control pipeline for policy ingestion, parsing, versioning, change detection, requirements synchronization, documentation generation, human review, and controlled publication.
+This plan covers both the policy-documentation synchronization workflow and the user-selected overtime-operations scope in requirements FR-001 through FR-038. The existing T01-T36 tasks cover the documentation-control pipeline for policy ingestion, parsing, versioning, change detection, requirements synchronization, documentation generation, human review, and controlled publication. T37-T42 add the missing runtime overtime request, eligibility, calculation, approval/status, and submission behavior.
 
 The plan does not implement payroll execution, payment processing, payment confirmation, or policy-level exception approval. Payment SLA, payment confirmation evidence, policy-exception authority, retention/deletion policy, backup/recovery objectives, authoritative repositories, identity-provider choices, and provider-specific deployment choices remain `Not Found` or require human approval.
 
-Requirements approval and architecture/design approval are already complete. Documentation synchronization approval and final publication approval remain mandatory per synchronization run.
+Requirements approval is recorded in `requirements.md`. The user approved the revised architecture and this plan on 2026-10-26. Tasks remain subject to their dependencies and the provider, security, retention, and recovery decisions listed below. Documentation synchronization approval and final publication approval remain mandatory per synchronization run.
 
 ## Dependency and Status Conventions
 
@@ -469,7 +469,7 @@ Requirements approval and architecture/design approval are already complete. Doc
 
 - **Task ID:** T28
 - **Task name:** Implement audit trail
-- **Description:** Record immutable events for ingestion, parsing, versioning, change detection, synchronization, review, approval, generation, publication, errors, retries, and checkpoint transitions.
+- **Description:** Record immutable events for ingestion, parsing, versioning, change detection, synchronization, overtime requests, eligibility results, calculations, approvals, submissions, errors, retries, and checkpoint transitions.
 - **Phase:** 9
 - **Dependencies:** T04, T13, T21, T22, T25
 - **Blocked by:** Audit retention period and deletion policy are `Not Found`.
@@ -478,7 +478,7 @@ Requirements approval and architecture/design approval are already complete. Doc
 - **Related NFR-XXX requirements:** NFR-001, NFR-004
 - **Architecture component:** Audit Trail Service
 - **Expected files/modules:** `src/audit/events.py`, `src/audit/service.py`, `src/storage/audit_repository.py`
-- **Required tests:** Append-only behavior; event completeness; actor/timestamp/hash linkage; tamper-evidence tests.
+- **Required tests:** Append-only behavior; documentation and overtime event completeness; actor/timestamp/hash linkage; tamper-evidence tests.
 - **Acceptance condition:** Every material state change and artifact has an auditable event with provenance.
 
 ### T29 — Implement Observability and Notifications
@@ -501,7 +501,7 @@ Requirements approval and architecture/design approval are already complete. Doc
 
 - **Task ID:** T30
 - **Task name:** Implement retry and recovery
-- **Description:** Add bounded retries for transient storage/notification/repository failures, checkpoint resume, preserved earlier state, duplicate-publication prevention, and explicit failed-run handling.
+- **Description:** Add bounded retries for transient storage, notification, repository, and approved overtime-submission failures; checkpoint resume; preserved earlier state; duplicate-publication/submission prevention; and explicit failed-run handling.
 - **Phase:** 9
 - **Dependencies:** T21, T25, T28
 - **Blocked by:** Backup/recovery objectives are `Not Found`; retry policy details are architecture recommendations requiring approval.
@@ -510,7 +510,7 @@ Requirements approval and architecture/design approval are already complete. Doc
 - **Related NFR-XXX requirements:** NFR-001, NFR-002
 - **Architecture component:** Synchronization Checkpoint Store; Reliability
 - **Expected files/modules:** `src/reliability/retry.py`, `src/reliability/recovery.py`, `src/workflow/resume.py`
-- **Required tests:** Failure at every checkpoint; resume; duplicate retry; partial publication; no-success-on-failure tests.
+- **Required tests:** Failure at every checkpoint; resume; duplicate retry; partial publication/submission; no-success-on-failure tests.
 - **Acceptance condition:** Later-stage failure never falsely finalizes a run, and safe resume is idempotent.
 
 ### T31 — Implement Security and Authorization Controls
@@ -526,7 +526,7 @@ Requirements approval and architecture/design approval are already complete. Doc
 - **Related NFR-XXX requirements:** NFR-001, NFR-004
 - **Architecture component:** Security; Human Review and Approval Service; Documentation Publication Adapter
 - **Expected files/modules:** `src/security/auth.py`, `src/security/authorization.py`, `src/security/secrets.py`, `src/security/sanitization.py`
-- **Required tests:** Unauthenticated access; unauthorized publication; least-privilege matrix once approved; secret non-persistence; sensitive-data logging tests.
+- **Required tests:** Unauthenticated access; unauthorized publication; least-privilege matrix once approved; secret non-persistence; sensitive overtime-data access and logging tests.
 - **Acceptance condition:** Approval and publication boundaries enforce authorization and sensitive content is not exposed through logs or artifacts.
 
 ## Phase 10 — Testing and Verification
@@ -611,6 +611,106 @@ Requirements approval and architecture/design approval are already complete. Doc
 - **Required tests:** Happy path; empty/invalid policy; conflicts; missing configuration; missing required input; approval gate; publication failure; partial-run recovery; status separation.
 - **Acceptance condition:** Every FR/NFR has passing implementation/test evidence or is explicitly reported as blocked by `Not Found`/human approval.
 
+## Phase 11 — Overtime Operations
+
+These tasks implement the runtime requirements selected by the user. The architecture and plan were approved by the user on 2026-10-26. Tasks remain subject to their listed dependencies and operational blockers. They must remain separate from `SYNC_*` documentation-synchronization state and must not infer payment or policy-exception behavior.
+
+### T37 — Define Overtime Request and Result Records
+
+- **Task ID:** T37
+- **Task name:** Define overtime request and result records
+- **Description:** Define typed request, approval evidence, eligibility result, calculation result, submission metadata, and status-history records. Persist calculation inputs and provenance; keep overtime workflow statuses separate from documentation-sync states.
+- **Phase:** 11
+- **Dependencies:** T02, T04, T12, T17
+- **Blocked by:** Production persistence and retention choices remain human-gated.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-001, FR-002, FR-016, FR-033, FR-036, FR-037
+- **Related NFR-XXX requirements:** NFR-001, NFR-004, NFR-005
+- **Architecture component:** Overtime Request Service; Overtime Workflow Store
+- **Expected files/modules:** `src/domain/overtime.py`, `src/storage/overtime_repository.py`, `tests/unit/domain/`
+- **Required tests:** Valid and invalid records; missing-value representation; provenance; status-history persistence contract.
+- **Acceptance condition:** Request and result records preserve inputs, evidence references, classifications, and status without conflating workflow namespaces.
+
+### T38 — Implement Overtime Eligibility Evaluation
+
+- **Task ID:** T38
+- **Task name:** Evaluate overtime eligibility
+- **Description:** Implement associate-scope, business-request, advance-approval, project calendar, weekly boundary, time-zone, lunch exclusion, and 48-hour threshold rules. Missing required configuration or approval evidence blocks the affected evaluation.
+- **Phase:** 11
+- **Dependencies:** T17, T37
+- **Blocked by:** Calendar values remain project-provided inputs.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-003 through FR-016
+- **Related NFR-XXX requirements:** NFR-002, NFR-004
+- **Architecture component:** Eligibility Evaluation Service; Configuration and Validation Service
+- **Expected files/modules:** `src/automated_documentation_sync/overtime/eligibility.py`, `tests/unit/overtime/`, `tests/integration/overtime/`
+- **Required tests:** Eligible and ineligible requests; missing calendar/week/time zone; exactly and above 48 hours; excluded lunch; absent or late approval.
+- **Acceptance condition:** Eligibility follows approved boundaries and fails closed without inventing disposition for `Not Found` cases.
+
+### T39 — Implement Compensation Calculation
+
+- **Task ID:** T39
+- **Task name:** Calculate overtime compensation
+- **Description:** Implement the approved hourly-wage formula, 8/9-hour configuration constraint, working/non-working-day scenario bands, compensatory-off eligibility and deadlines, full intermediate precision, and final INR rounding.
+- **Phase:** 11
+- **Dependencies:** T37, T38
+- **Blocked by:** Required wage data remains an external validated input.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-017 through FR-029
+- **Related NFR-XXX requirements:** NFR-002, NFR-003
+- **Architecture component:** Compensation Calculator
+- **Expected files/modules:** `src/automated_documentation_sync/overtime/compensation.py`, `tests/unit/overtime/`, `tests/integration/overtime/`
+- **Required tests:** Each scenario boundary; fractional hours; missing wage; invalid/missing working hours; final-only rounding.
+- **Acceptance condition:** Results match the approved formula and scenario rules without fallback wage values or intermediate rounding.
+
+### T40 — Implement Overtime Approval and Status Workflow
+
+- **Task ID:** T40
+- **Task name:** Track overtime approvals and statuses
+- **Description:** Record required advance approvals, approval evidence references, overtime registration date, time-report update date, submission dates, processing status, and status history. Track the 15-day registration and before-the-5th time-report requirements without inventing consequences for missed deadlines.
+- **Phase:** 11
+- **Dependencies:** T37, T38, T39
+- **Blocked by:** Identity and reviewer authorization decisions remain human-gated.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-012 through FR-016, FR-033, FR-036 through FR-039
+- **Related NFR-XXX requirements:** NFR-001, NFR-004, NFR-005
+- **Architecture component:** Overtime Request Service; Human Review and Approval Service; Overtime Workflow Store
+- **Expected files/modules:** `src/automated_documentation_sync/overtime/service.py`, `src/workflow/overtime_states.py`, `tests/unit/overtime/`
+- **Required tests:** Required approvers and evidence; reporting-deadline tracking; status recording/history; status namespace separation; undefined transitions remain unimplemented.
+- **Acceptance condition:** Overtime workflow records required evidence and statuses without claiming unsupported authorization or payment outcomes.
+
+### T41 — Implement Overtime Submission Routing
+
+- **Task ID:** T41
+- **Task name:** Route approved overtime submissions
+- **Description:** Route regular-employee calculation and approval metadata to Ask Compensation and subcontractor details to TA Operations at the clarified address. Record submission outcomes without executing or confirming payment.
+- **Phase:** 11
+- **Dependencies:** T30, T39, T40
+- **Blocked by:** Production endpoint, credentials, and integration behavior require human approval.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-030 through FR-035
+- **Related NFR-XXX requirements:** NFR-001, NFR-002, NFR-004
+- **Architecture component:** Overtime Submission Adapter
+- **Expected files/modules:** `src/automated_documentation_sync/overtime/submission.py`, `tests/fakes/`, `tests/integration/overtime/`
+- **Required tests:** Correct destination routing; missing input; external failure; no payment action; accurate submission status.
+- **Acceptance condition:** Only approved, validated metadata is routed to the correct destination and no payment completion is implied.
+
+### T42 — Verify Overtime Operations End to End
+
+- **Task ID:** T42
+- **Task name:** Verify overtime operations end to end
+- **Description:** Exercise requests through validation, eligibility, calculation, approvals, status history, and test-double submission; update requirement coverage with actual evidence and unresolved production blockers.
+- **Phase:** 11
+- **Dependencies:** T28, T30, T31, T37, T38, T39, T40, T41
+- **Blocked by:** Revised architecture and implementation-plan approval; production verification remains blocked by provider, identity, access-control, retention, and recovery decisions.
+- **Parallelizable:** No
+- **Related FR-XXX requirements:** FR-001 through FR-038
+- **Related NFR-XXX requirements:** NFR-001 through NFR-005
+- **Architecture component:** Overtime Operations Workflow; Verification
+- **Expected files/modules:** `tests/e2e/`, `reports/requirements-coverage.md`, `docs/release-readiness.md`
+- **Required tests:** Happy path; missing/invalid inputs; all eligibility and compensation boundaries; both reporting deadlines; external submission failure; audit/status evidence; privacy controls once approved.
+- **Acceptance condition:** Each requirement has passing test evidence or is explicitly blocked by `Not Found` or a human decision; test doubles are not represented as production approval.
+
 ## Parallel Work Summary
 
 The following tracks can run in parallel after their dependencies complete:
@@ -629,11 +729,12 @@ No task may bypass T23, T25, or T27 before publication integration is considered
 
 ## Human Approval Gates
 
-1. **Requirements approval:** Already completed; requirements.md is the authoritative approved requirements source.
-2. **Architecture/design approval:** Already completed; architecture.md is the authoritative approved architecture source.
-3. **Documentation synchronization review:** Required for every generated change set before `SYNC_APPROVED`.
-4. **Final publication approval:** Required before `SYNC_PUBLISHED`; publication must verify approval evidence, reviewer authorization, and artifact hash.
-5. **Provider and operational approval:** Required for source repository, identity provider, documentation repository, protected publication mechanism, retention/deletion, backup/recovery, and notification provider choices.
+1. **Requirements approval:** Completed for the existing requirements artifact; any requirement changes require renewed human approval.
+2. **Architecture/design approval:** Approved by the user on 2026-10-26 for the combined documentation-sync and overtime-operations boundary.
+3. **Implementation-plan approval:** Approved by the user on 2026-10-26 for T37-T42 and their dependencies.
+4. **Documentation synchronization review:** Required for every generated change set before `SYNC_APPROVED`.
+5. **Final publication approval:** Required before `SYNC_PUBLISHED`; publication must verify approval evidence, reviewer authorization, and artifact hash.
+6. **Provider and operational approval:** Required for source repository, identity provider, documentation repository, protected publication mechanism, retention/deletion, backup/recovery, and notification provider choices.
 
 ## Blocked and Not Found Dependencies
 
@@ -647,23 +748,24 @@ No task may bypass T23, T25, or T27 before publication integration is considered
 
 ## Requirements Coverage Validation
 
-- **FR-001 to FR-005:** T02, T06, T16, T17, T18, T19, T32, T34, T36.
-- **FR-006 to FR-011:** T03, T08, T17, T32, T36.
-- **FR-012 to FR-016:** T12, T16, T22, T23, T25, T28, T35, T36.
-- **FR-017 to FR-024:** T09, T11, T14, T18, T19, T20, T33, T34, T36.
-- **FR-025 to FR-030:** T09, T10, T14, T15, T18, T19, T33, T34, T36.
-- **FR-031 to FR-035:** T09, T10, T14, T17, T18, T22, T26, T32, T35, T36.
-- **FR-036 to FR-039:** T02, T12, T21, T22, T23, T25, T28, T30, T35, T36.
-- **NFR-001:** T04, T11, T13, T16, T20, T21, T22, T28, T30, T32-T36.
-- **NFR-002:** T03, T08, T17, T21, T23, T30, T32, T35, T36.
-- **NFR-003:** T20, T34, T36.
-- **NFR-004:** T03, T22, T25, T28, T31, T35, T36.
-- **NFR-005:** T02, T11, T12, T16, T18, T19, T22, T23, T33, T34, T36.
+- **FR-001 to FR-005:** T02, T06, T16-T19, T32, T34, T36-T38, T42.
+- **FR-006 to FR-011:** T03, T08, T17, T32, T36, T38, T42.
+- **FR-012 to FR-016:** T12, T16, T22, T23, T25, T28, T35, T36-T38, T40, T42.
+- **FR-017 to FR-024:** T09, T11, T14, T18-T20, T33, T34, T36, T39, T42.
+- **FR-025 to FR-030:** T09, T10, T14, T15, T18, T19, T33, T34, T36, T38, T39, T42.
+- **FR-031 to FR-035:** T09, T10, T14, T17-T19, T22, T26, T32, T35, T36, T40-T42.
+- **FR-036 to FR-039:** T02, T12, T21-T23, T25, T28, T30, T35-T37, T40, T42.
+- **Overtime runtime behavior:** T37-T42 are approved and not yet implemented; runtime coverage remains incomplete.
+- **NFR-001:** T04, T11, T13, T16, T20-T22, T28, T30, T32-T42.
+- **NFR-002:** T03, T08, T17, T21, T23, T30, T32, T35, T36, T38, T39, T41, T42.
+- **NFR-003:** T20, T34, T36, T39, T42.
+- **NFR-004:** T03, T22, T25, T28, T31, T35-T42.
+- **NFR-005:** T02, T11, T12, T16, T18, T19, T22, T23, T33, T34, T36-T42.
 
 ## Dependency Validation
 
 - **Circular dependencies:** None in the dependency graph. The empty-document gate T08 uses the persistence baseline and ingestion output without depending on later change detection or the full workflow orchestrator.
-- **Critical dependency chain:** T01 → T02/T04 → T06/T07 → T09/T10/T11 → T13/T14/T15 → T16/T17/T18 → T19/T20 → T21/T22/T23 → T24/T25 → T27 → T26 → T28/T30 → T35/T36.
+- **Critical dependency chain:** T01 → T02/T04 → T06/T07 → T09/T10/T11 → T13/T14/T15 → T16/T17/T18 → T19/T20 → T21/T22/T23 → T24/T25 → T27 → T26 → T28/T30 → T35/T36. Proposed overtime operations chain after architecture/plan approval: T37 → T38 → T39 → T40 → T41 → T42, with T42 also depending on T28/T30/T31.
 - **Publication gate:** T26 is blocked until T25 verification succeeds and T27 human approval is recorded.
 - **Human-review gate:** T23 blocks `SYNC_APPROVED` until all unresolved items have explicit outcomes.
 - **No production code written:** This document is an implementation plan only; no production code is created by the plan.

@@ -2,23 +2,23 @@
 
 ## Review Status
 
-Review completed against the repository-root `requirements.md`, `architecture.md`, and `impl-plan.md`. The findings below are recommendations for human disposition; no architecture or requirement changes have been applied or approved by this review.
+Review completed against the repository-root `requirements.md`, `architecture.md`, and `impl-plan.md`. The user selected and approved the overtime-operations product scope, architecture boundary, and T37-T42 implementation plan on 2026-10-26. DR-003 remains an unresolved production blocker; this approval does not resolve its security decisions.
 
 ## Findings
 
-### DR-001 — High: Product scope differs between requirements and architecture
+### DR-001 — High: Overtime-operations behavior remains unimplemented
 
-- **Evidence:** The requirements business context describes overtime eligibility, compensation calculation, request tracking, and submission. Requirements FR-001 and FR-017 through FR-035 define calculation inputs, formulas, eligibility scenarios, reporting, and processing destinations. The architecture summary defines a documentation-synchronization system and says it may store overtime-related requirements and submission metadata only; its scope excludes payroll and payment processing. The architecture traceability table nevertheless maps those operational requirements to this system.
-- **Impact:** The implementation boundary and acceptance target are ambiguous. A documentation-sync service cannot satisfy operational calculation and request-processing requirements unless those requirements describe source policy content rather than runtime behavior. This can lead to missing components or incorrect claims of coverage.
-- **Recommendation:** Obtain human confirmation of the intended product boundary. Then reconcile the requirements, architecture, implementation plan, and requirements-coverage report so operational behavior is either explicitly in scope and architected, or explicitly represented as documentation content/out of scope. Do not implement either interpretation until approved.
-- **Disposition:** Pending human decision.
+- **Evidence:** The requirements business context and FR-001 through FR-038 define runtime overtime eligibility, calculation, tracking, and submission. The user approved the separate documentation-sync and overtime-operations workflows and T37-T42 on 2026-10-26. No overtime calculation or request model exists in the implementation yet.
+- **Impact:** Treating existing policy parsing tests as operational coverage would leave required runtime behavior unimplemented despite the approved boundary.
+- **Recommendation:** Implement approved tasks T37-T42 with tests before claiming runtime coverage. Keep payroll execution, payment confirmation, and policy-exception authority out of scope unless separately approved; do not invent their `Not Found` values.
+- **Disposition:** Architecture and plan approved by the user on 2026-10-26; runtime implementation remains outstanding.
 
-### DR-002 — Medium: Architecture approval status is internally inconsistent
+### DR-002 — Medium: Architecture and plan approval evidence must stay aligned
 
-- **Evidence:** Architecture decision AD-001 says the documentation-only boundary is "Approved by requirements" and also says "Human approval of this architecture boundary" is needed. The implementation plan states that architecture/design approval is already complete.
-- **Impact:** Agents cannot determine whether the architecture boundary is an approved constraint or an unresolved decision. This conflicts with the human-in-the-loop gate and can cause implementation to proceed under an unconfirmed scope.
-- **Recommendation:** Confirm the approval record with the human owner, then make AD-001 and the implementation-plan approval statement consistent. Do not infer approval evidence from the requirements artifact alone.
-- **Disposition:** Pending human confirmation.
+- **Evidence:** The previous plan said architecture/design approval was complete despite the design review marking approval pending. AD-001 and the plan now record the user's explicit approval on 2026-10-26.
+- **Impact:** If future edits revert either artifact to an approved state without an approval record, implementation could proceed under an unapproved architecture.
+- **Recommendation:** Preserve the approval record in both authoritative artifacts and keep provider/security decisions separately gated.
+- **Disposition:** Approval recorded in the architecture and plan on 2026-10-26.
 
 ### DR-003 — High: Sensitive-data access controls are not testable yet
 
@@ -31,13 +31,13 @@ Review completed against the repository-root `requirements.md`, `architecture.md
 
 | Area | Result |
 |---|---|
-| Requirements and architecture scope | Finding DR-001; human decision required |
-| Approval governance and traceability | Finding DR-002; approval evidence must be confirmed |
+| Requirements and architecture scope | User approved operations scope and architecture; runtime implementation remains outstanding (DR-001) |
+| Approval governance and traceability | User approval is recorded consistently in architecture and plan (DR-002) |
 | Security and sensitive-data handling | Finding DR-003; production remains blocked |
 | Reliability, failure handling, and publication gating | Architecture defines checkpoints, fail-closed behavior, idempotency, and human approval; provider-specific retry and publication choices remain human-gated |
-| Requirement traceability | Architecture includes a requirement mapping; scope mismatch in DR-001 prevents treating that mapping as implementation coverage |
+| Requirement traceability | Approved T37-T42 add runtime operations tasks; implementation coverage remains unverified until those tasks are completed |
 | Scalability and performance | Provider-neutral recommendations are documented; policy-change frequency and document volume remain `Not Found` |
 
 ## Approval
 
-This review records analysis and recommendations only. Human approval or rejection of findings, and approval of any resulting architecture changes, is `Pending`.
+This review records the user's scope selection and approval of the architecture and plan on 2026-10-26. DR-003 remains open and requires separate human decisions before production use.
